@@ -173,7 +173,16 @@ public class SellerServiceImpl implements SellerService {
 
         existing.setModifiedDate(LocalDateTime.now());
 
-        sellerEventPublisher.publishSellerPatched(sellerId.toString(), request);
+        SellerPatchDTO patchPayload = new SellerPatchDTO();
+        patchPayload.setFirstName(existing.getFirstName());
+        patchPayload.setLastName(existing.getLastName());
+        patchPayload.setPhone(existing.getPhone());
+        patchPayload.setCommissionPercentage(existing.getCommissionPercentage());
+        patchPayload.setIdentificationNumber(existing.getIdentificationNumber());
+        patchPayload.setLocationId(existing.getLocationId());
+        patchPayload.setDocumentTypeId(existing.getDocumentTypeId());
+
+        sellerEventPublisher.publishSellerPatched(sellerId.toString(), patchPayload);
         return sellerMapper.toDto(existing);
     }
 
