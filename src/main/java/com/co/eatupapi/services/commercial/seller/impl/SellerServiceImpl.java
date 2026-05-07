@@ -191,7 +191,7 @@ public class SellerServiceImpl implements SellerService {
 
     private void validateId(UUID value, String fieldName) {
         if (value == null) {
-            throw new SellerValidationException("Field "" + fieldName + "" is required and cannot be empty");
+            throw new SellerValidationException("Field " + fieldName + " is required and cannot be empty");
         }
     }
 
