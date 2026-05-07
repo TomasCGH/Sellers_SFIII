@@ -1,0 +1,51 @@
+meta {
+  name: create sale
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:8080/commercial/api/v1/sales
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJqdWFuLmJlcm5hbEBnbWFpbC5jb20iLCJpYXQiOjE3Nzc3OTQ0ODcsImV4cCI6MTc3Nzc5ODA4N30.yD2dgw9-hPYZDo4YNYDM3CCWliBlqrpj587WT-75G2m_2_QKO3xoW3cHrcem2LDl
+}
+
+body:json {
+  {
+    "sellerId": "SELLER-TEST-001",
+    "locationId": "88888888-8888-8888-8888-888888888888",
+    "tableId": "TABLE-1",
+    "details": [
+      {
+        "recipeId": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+        "quantity": 1,
+        "unitPrice": 6500,
+        "recipeLineComment": "Prueba receta inactiva",
+        "lineDisplayName": "Receta Inactiva Prueba"
+      }
+    ]
+  }
+}
+
+script:post-response {
+  // Validar que el status sea 201
+  test("Status code is 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  
+  // Guardar el ID para las siguientes peticiones
+  const data = res.getBody();
+  if (data && data.id) {
+    bru.setVar("saleId", data.id);
+    console.log("ID guardado en Bruno: " + data.id);
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
