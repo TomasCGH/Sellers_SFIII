@@ -2,6 +2,8 @@ package com.co.eatupapi.messaging.commercial.seller;
 
 import com.co.eatupapi.dto.commercial.seller.SellerDTO;
 import com.co.eatupapi.dto.commercial.seller.SellerPatchDTO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -11,6 +13,8 @@ import java.util.Map;
 
 @Component
 public class SellerEventPublisherBroker implements SellerEventPublisher {
+
+    private static final Logger log = LoggerFactory.getLogger(SellerEventPublisherBroker.class);
 
     private final RabbitTemplate rabbitTemplate;
 
@@ -55,5 +59,10 @@ public class SellerEventPublisherBroker implements SellerEventPublisher {
         }
 
         rabbitTemplate.convertAndSend(exchange, routingKey, event);
+        log.info("Seller event sent to RabbitMQ. eventType={}, sellerId={}, exchange={}, routingKey={}",
+                event.getEventType(),
+                event.getSellerId(),
+                exchange,
+                routingKey);
     }
 }

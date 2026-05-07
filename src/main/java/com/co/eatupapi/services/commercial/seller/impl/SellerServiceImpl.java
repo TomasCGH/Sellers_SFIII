@@ -91,6 +91,7 @@ public class SellerServiceImpl implements SellerService {
 
     @Override
     public SellerDTO updateSeller(UUID sellerId, SellerDTO request) {
+        validateId(sellerId, "sellerId");
         if (request == null) {
             throw new SellerValidationException("Request body is required");
         }
@@ -119,6 +120,7 @@ public class SellerServiceImpl implements SellerService {
 
     @Override
     public SellerDTO updateStatus(UUID sellerId, String status) {
+        validateId(sellerId, "sellerId");
         SellerStatus newStatus = parseRequiredStatus(status);
 
         SellerDomain existing = findSellerById(sellerId);
@@ -132,6 +134,7 @@ public class SellerServiceImpl implements SellerService {
 
     @Override
     public SellerDTO patchSeller(UUID sellerId, SellerPatchDTO request) {
+        validateId(sellerId, "sellerId");
         if (request == null) {
             throw new SellerValidationException("Request body is required");
         }
@@ -184,6 +187,12 @@ public class SellerServiceImpl implements SellerService {
 
         sellerEventPublisher.publishSellerPatched(sellerId.toString(), patchPayload);
         return sellerMapper.toDto(existing);
+    }
+
+    private void validateId(UUID value, String fieldName) {
+        if (value == null) {
+            throw new SellerValidationException("Field "" + fieldName + "" is required and cannot be empty");
+        }
     }
 
     private SellerDomain findSellerById(UUID sellerId) {
