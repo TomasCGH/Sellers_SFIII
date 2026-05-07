@@ -76,6 +76,12 @@ public class CommercialRabbitMQConfig {
     @Value("${rabbitmq.routing-key.customer-discount}")
     private String customerDiscountRoutingKey;
 
+    @Value("${rabbitmq.queue.seller}")
+    private String sellerQueueName;
+
+    @Value("${rabbitmq.routing-key.seller}")
+    private String sellerRoutingKey;
+
 
     @Bean
     public RabbitAdmin rabbitAdmin(ConnectionFactory connectionFactory) {
@@ -211,6 +217,16 @@ public class CommercialRabbitMQConfig {
     @Bean
     public Binding customerDiscountBinding(Queue customerDiscountQueue, DirectExchange commercialExchange) {
         return BindingBuilder.bind(customerDiscountQueue).to(commercialExchange).with(customerDiscountRoutingKey);
+    }
+
+    @Bean
+    public Queue sellerQueue() {
+        return QueueBuilder.durable(sellerQueueName).build();
+    }
+
+    @Bean
+    public Binding sellerBinding(Queue sellerQueue, DirectExchange commercialExchange) {
+        return BindingBuilder.bind(sellerQueue).to(commercialExchange).with(sellerRoutingKey);
     }
 
 }

@@ -4,6 +4,7 @@ import com.co.eatupapi.domain.commercial.seller.SellerDomain;
 import com.co.eatupapi.domain.commercial.seller.SellerStatus;
 import com.co.eatupapi.dto.commercial.seller.SellerDTO;
 import com.co.eatupapi.dto.commercial.seller.SellerPatchDTO;
+import com.co.eatupapi.messaging.commercial.seller.SellerEventPublisher;
 import com.co.eatupapi.repositories.commercial.seller.SellerRepository;
 import com.co.eatupapi.services.commercial.seller.SellerService;
 import com.co.eatupapi.utils.commercial.seller.exceptions.SellerBusinessException;
@@ -32,11 +33,14 @@ public class SellerServiceImpl implements SellerService {
 
     private final SellerRepository sellerRepository;
     private final SellerMapper sellerMapper;
+    private final SellerEventPublisher sellerEventPublisher;
 
     public SellerServiceImpl(SellerRepository sellerRepository,
-                             SellerMapper sellerMapper) {
+                             SellerMapper sellerMapper,
+                             SellerEventPublisher sellerEventPublisher) {
         this.sellerRepository = sellerRepository;
         this.sellerMapper = sellerMapper;
+        this.sellerEventPublisher = sellerEventPublisher;
     }
 
     @Override
@@ -59,8 +63,9 @@ public class SellerServiceImpl implements SellerService {
         sellerDomain.setCreatedDate(LocalDateTime.now());
         sellerDomain.setModifiedDate(LocalDateTime.now());
 
-        sellerRepository.save(sellerDomain);
-        return sellerMapper.toDto(sellerDomain);
+        SellerDTO payload = sellerMapper.toDto(sellerDomain);
+        sellerEventPublisher.publishSellerCreated(payload);
+        return payload;
     }
 
     @Override
@@ -107,8 +112,9 @@ public class SellerServiceImpl implements SellerService {
         existing.setEmail(request.getEmail().trim().toLowerCase());
         existing.setModifiedDate(LocalDateTime.now());
 
-        sellerRepository.save(existing);
-        return sellerMapper.toDto(existing);
+        SellerDTO payload = sellerMapper.toDto(existing);
+        sellerEventPublisher.publishSellerUpdated(sellerId.toString(), payload);
+        return payload;
     }
 
     @Override
@@ -119,8 +125,9 @@ public class SellerServiceImpl implements SellerService {
         existing.setStatus(newStatus);
         existing.setModifiedDate(LocalDateTime.now());
 
-        sellerRepository.save(existing);
-        return sellerMapper.toDto(existing);
+        SellerDTO payload = sellerMapper.toDto(existing);
+        sellerEventPublisher.publishSellerStatusUpdated(sellerId.toString(), newStatus.name());
+        return payload;
     }
 
     @Override
@@ -165,7 +172,8 @@ public class SellerServiceImpl implements SellerService {
         }
 
         existing.setModifiedDate(LocalDateTime.now());
-        sellerRepository.save(existing);
+
+        sellerEventPublisher.publishSellerPatched(sellerId.toString(), request);
         return sellerMapper.toDto(existing);
     }
 
