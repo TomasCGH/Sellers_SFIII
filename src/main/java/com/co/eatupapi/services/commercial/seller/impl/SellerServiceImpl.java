@@ -4,6 +4,7 @@ import com.co.eatupapi.domain.commercial.seller.SellerDomain;
 import com.co.eatupapi.domain.commercial.seller.SellerStatus;
 import com.co.eatupapi.dto.commercial.seller.SellerDTO;
 import com.co.eatupapi.dto.commercial.seller.SellerPatchDTO;
+import com.co.eatupapi.messaging.commercial.seller.SellerEventPublisher;
 import com.co.eatupapi.repositories.commercial.seller.SellerRepository;
 import com.co.eatupapi.services.commercial.seller.SellerService;
 import com.co.eatupapi.utils.commercial.seller.exceptions.SellerBusinessException;
@@ -32,11 +33,14 @@ public class SellerServiceImpl implements SellerService {
 
     private final SellerRepository sellerRepository;
     private final SellerMapper sellerMapper;
+    private final SellerEventPublisher sellerEventPublisher;
 
     public SellerServiceImpl(SellerRepository sellerRepository,
-                             SellerMapper sellerMapper) {
+                             SellerMapper sellerMapper,
+                             SellerEventPublisher sellerEventPublisher) {
         this.sellerRepository = sellerRepository;
         this.sellerMapper = sellerMapper;
+        this.sellerEventPublisher = sellerEventPublisher;
     }
 
     @Override
@@ -59,8 +63,9 @@ public class SellerServiceImpl implements SellerService {
         sellerDomain.setCreatedDate(LocalDateTime.now());
         sellerDomain.setModifiedDate(LocalDateTime.now());
 
-        sellerRepository.save(sellerDomain);
-        return sellerMapper.toDto(sellerDomain);
+        SellerDTO payload = sellerMapper.toDto(sellerDomain);
+        sellerEventPublisher.publishSellerCreated(payload);
+        return payload;
     }
 
     @Override
@@ -86,6 +91,7 @@ public class SellerServiceImpl implements SellerService {
 
     @Override
     public SellerDTO updateSeller(UUID sellerId, SellerDTO request) {
+        validateId(sellerId, "sellerId");
         if (request == null) {
             throw new SellerValidationException("Request body is required");
         }
@@ -107,24 +113,28 @@ public class SellerServiceImpl implements SellerService {
         existing.setEmail(request.getEmail().trim().toLowerCase());
         existing.setModifiedDate(LocalDateTime.now());
 
-        sellerRepository.save(existing);
-        return sellerMapper.toDto(existing);
+        SellerDTO payload = sellerMapper.toDto(existing);
+        sellerEventPublisher.publishSellerUpdated(sellerId.toString(), payload);
+        return payload;
     }
 
     @Override
     public SellerDTO updateStatus(UUID sellerId, String status) {
+        validateId(sellerId, "sellerId");
         SellerStatus newStatus = parseRequiredStatus(status);
 
         SellerDomain existing = findSellerById(sellerId);
         existing.setStatus(newStatus);
         existing.setModifiedDate(LocalDateTime.now());
 
-        sellerRepository.save(existing);
-        return sellerMapper.toDto(existing);
+        SellerDTO payload = sellerMapper.toDto(existing);
+        sellerEventPublisher.publishSellerStatusUpdated(sellerId.toString(), newStatus.name());
+        return payload;
     }
 
     @Override
     public SellerDTO patchSeller(UUID sellerId, SellerPatchDTO request) {
+        validateId(sellerId, "sellerId");
         if (request == null) {
             throw new SellerValidationException("Request body is required");
         }
@@ -165,8 +175,24 @@ public class SellerServiceImpl implements SellerService {
         }
 
         existing.setModifiedDate(LocalDateTime.now());
-        sellerRepository.save(existing);
+
+        SellerPatchDTO patchPayload = new SellerPatchDTO();
+        patchPayload.setFirstName(existing.getFirstName());
+        patchPayload.setLastName(existing.getLastName());
+        patchPayload.setPhone(existing.getPhone());
+        patchPayload.setCommissionPercentage(existing.getCommissionPercentage());
+        patchPayload.setIdentificationNumber(existing.getIdentificationNumber());
+        patchPayload.setLocationId(existing.getLocationId());
+        patchPayload.setDocumentTypeId(existing.getDocumentTypeId());
+
+        sellerEventPublisher.publishSellerPatched(sellerId.toString(), patchPayload);
         return sellerMapper.toDto(existing);
+    }
+
+    private void validateId(UUID value, String fieldName) {
+        if (value == null) {
+            throw new SellerValidationException("Field " + fieldName + " is required and cannot be empty");
+        }
     }
 
     private SellerDomain findSellerById(UUID sellerId) {
